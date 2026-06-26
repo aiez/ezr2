@@ -1,0 +1,8 @@
+              ____  
+  ___ _____ _|___ \ 
+ / _ \_  / '__|__) |
+|  __// /| |  / __/ 
+ \___/___|_| |_____|
+                    
+explainable multi-objective optimization. http://tiny.cc/ezr2
+"find the best rows; label the fewest."
