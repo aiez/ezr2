@@ -10,7 +10,7 @@ only a few dozen informative rows, then sort the rest. A regression *or*
 classification tree explains which input ranges lead to the best goals.
 
 Runs on **data** (a CSV) or a live **model** (override `labelled()` so a
-row's goals are computed on demand — see `dtlz4.py`).
+row's goals are computed on demand — see `dtlz.py`).
 
 ```bash
 # sibling data gist supplies the CSVs (no data lives in here)
@@ -29,7 +29,7 @@ make test                                         # same, via konfig
 |------|------|
 | `ezr2.py`        | the library + CLI dispatch (`main`); no tests inside |
 | `test_ezr2.py`   | every `test_*` + the runnable entry point |
-| `dtlz4.py`       | tutorial: drive ezr2 with an external model (DTLZ4) |
+| `dtlz.py`        | tutorial: drive ezr2 with external models (DTLZ1–7) |
 | `Growing.py/.md/.png` | sensitivity study of the `keepf`/`grow` knobs |
 | `Random.md`      | is random as good as active learning? (corpus study) |
 | `pctl.py`        | percentile summary for the `holdouts`/`pure` lanes |

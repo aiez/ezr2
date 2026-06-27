@@ -39,7 +39,7 @@ INSTALL: grab the library, its tests, and some sample data, then run:
 
 MODES: optimize a static CSV (format below), or a live model by
   overriding labelled() to compute goals on demand -- worked example
-  in dtlz4.py (http://tiny.cc/ezr2#file-dtlz4-py).
+  in dtlz.py (http://tiny.cc/ezr2#file-dtlz-py).
 
 DATA: comma-separated, first row names the columns. A name's last
 character sets that column's role; its first sets its type:
