@@ -3,7 +3,7 @@
 
 # ezr2: a tour
 
-Tim Menzies <timm@ieee.org> · [timm.fyi](http://timm.fyi) · 2026-06-26 · [tiny.cc/ezr2](http://tiny.cc/ezr2)
+Tim Menzies <timm@ieee.org> · [timm.fyi](http://timm.fyi) · 2026-06-26 · [https://github.com/aiez/ezr2](https://github.com/aiez/ezr2)
 
 A textbook in genetic-stanza form. Read top-to-bottom: each
 concept appears in build order, atoms first, call sites last.
@@ -13,14 +13,14 @@ session; outputs are verbatim.
 **Install.** Grab the library, its tests, and some sample data, then run:
 
 ```bash
-wget -O ezr2.py      http://tiny.cc/ezr2#file-ezr2-py
-wget -O test_ezr2.py http://tiny.cc/ezr2#file-test_ezr2-py
-wget -O auto93.csv   http://tiny.cc/optimiz#file-misc_auto93-csv
+wget -O ezr2.py      https://github.com/aiez/ezr2#file-ezr2-py
+wget -O test_ezr2.py https://github.com/aiez/ezr2#file-test_ezr2-py
+wget -O auto93.csv   https://github.com/aiez/optimiz#file-misc_auto93-csv
 python3 test_ezr2.py --file=auto93.csv disty
 ```
 
 More sample CSVs live in the sibling data gist
-[`tiny.cc/optimiz`](http://tiny.cc/optimiz) (optimization tasks).
+[`https://github.com/aiez/optimiz`](https://github.com/aiez/optimiz) (optimization tasks).
 
 ```
 AUTHOR-CONFIG

@@ -16,7 +16,7 @@ dependencies = []
 py-modules = ["ezr2"]
 
 [project.urls]
-Homepage = "http://tiny.cc/ezr2"
+Homepage = "https://github.com/aiez/ezr2"
 
 [tool.ruff]
 # this is deliberately terse, K&R-style code; ignore the house-style rules

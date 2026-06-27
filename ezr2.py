@@ -32,14 +32,14 @@ TESTS: (run with their bare name):
 """
 """
 INSTALL: grab the library, its tests, and some sample data, then run:
-  wget -O ezr2.py      http://tiny.cc/ezr2#file-ezr2-py
-  wget -O test_ezr2.py http://tiny.cc/ezr2#file-test_ezr2-py
-  wget -O auto93.csv   http://tiny.cc/optimiz#file-misc_auto93-csv
+  wget -O ezr2.py      https://github.com/aiez/ezr2#file-ezr2-py
+  wget -O test_ezr2.py https://github.com/aiez/ezr2#file-test_ezr2-py
+  wget -O auto93.csv   https://github.com/aiez/optimiz#file-misc_auto93-csv
   python3 test_ezr2.py --file=auto93.csv disty
 
 MODES: optimize a static CSV (format below), or a live model by
   overriding labelled() to compute goals on demand -- worked example
-  in dtlz.py (http://tiny.cc/ezr2#file-dtlz-py).
+  in dtlz.py (https://github.com/aiez/ezr2#file-dtlz-py).
 
 DATA: comma-separated, first row names the columns. A name's last
 character sets that column's role; its first sets its type:

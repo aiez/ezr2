@@ -1,7 +1,7 @@
 <!-- Copyright (c) 2026 Tim Menzies, MIT License https://opensource.org/licenses/MIT -->
 <a href="https://timm.fyi"><img align="right" alt="Author" src="https://img.shields.io/badge/Author-timm-dc143c?logo=readme&logoColor=white"></a><img align="right" alt="Language" src="https://img.shields.io/badge/Language-Python%203.12+-000080?logo=python&logoColor=white"><img align="right" alt="Deps" src="https://img.shields.io/badge/Deps-0-32cd32?logo=checkmarx&logoColor=white"><a href="https://choosealicense.com/licenses/mit/"><img align="right" alt="License" src="https://img.shields.io/badge/License-MIT-32cd32?logo=open-source-initiative&logoColor=white"></a><img align="right" alt="Purpose" src="https://img.shields.io/badge/Purpose-XAI·Optimization-7b68ee?logo=githubcopilot&logoColor=white">
 
-### [http://tiny.cc/ezr2](http://tiny.cc/ezr2)
+### [https://github.com/aiez/ezr2](https://github.com/aiez/ezr2)
 ezr2 — explainable multi-objective optimization in one file, **zero
 dependencies**, pure Python stdlib. Build a large pool of candidate rows,
 recursively split it by far-point projection (a descendant of SWAY), label
@@ -12,8 +12,8 @@ a branch-delta reads as an action. Runs on a CSV, or a live model (override
 
 ```bash
 # sibling data gist supplies the CSVs (no data lives in here)
-git clone http://tiny.cc/optimiz                 # optimization data
-git clone http://tiny.cc/ezr2 && cd ezr2
+git clone https://github.com/aiez/optimiz                 # optimization data
+git clone https://github.com/aiez/ezr2 && cd ezr2
 python3 test_ezr2.py tree                         # build + show a tree
 python3 test_ezr2.py all                          # run every self-test
 make test                                         # same, via konfig
@@ -21,7 +21,7 @@ make test                                         # same, via konfig
 
 **Sections:** [NAME](#name) | [SYNOPSIS](#synopsis) | [DESCRIPTION](#description) | [DATA](#data) | [OPTIONS](#options) | [FINDINGS](#findings) | [SEE ALSO](#see-also) | [LICENSE](#license) | [AUTHOR](#author)
 
-**Files:** [ezr2.py](http://tiny.cc/ezr2#file-ezr2-py) | [test_ezr2.py](http://tiny.cc/ezr2#file-test_ezr2-py) | [dtlz.py](http://tiny.cc/ezr2#file-dtlz-py) | [Growing.py](http://tiny.cc/ezr2#file-growing-py) | [pctl.py](http://tiny.cc/ezr2#file-pctl-py) | [ezr2.md](http://tiny.cc/ezr2#file-ezr2-md) | [Random.md](http://tiny.cc/ezr2#file-random-md) | [Growing.md](http://tiny.cc/ezr2#file-growing-md) | [Makefile](http://tiny.cc/ezr2#file-makefile) | [pyproject.toml](http://tiny.cc/ezr2#file-pyproject-toml) | [LICENSE.md](http://tiny.cc/ezr2#file-license-md)
+**Files:** [ezr2.py](https://github.com/aiez/ezr2#file-ezr2-py) | [test_ezr2.py](https://github.com/aiez/ezr2#file-test_ezr2-py) | [dtlz.py](https://github.com/aiez/ezr2#file-dtlz-py) | [Growing.py](https://github.com/aiez/ezr2#file-growing-py) | [pctl.py](https://github.com/aiez/ezr2#file-pctl-py) | [ezr2.md](https://github.com/aiez/ezr2#file-ezr2-md) | [Random.md](https://github.com/aiez/ezr2#file-random-md) | [Growing.md](https://github.com/aiez/ezr2#file-growing-md) | [Makefile](https://github.com/aiez/ezr2#file-makefile) | [pyproject.toml](https://github.com/aiez/ezr2#file-pyproject-toml) | [LICENSE.md](https://github.com/aiez/ezr2#file-license-md)
 
 ## NAME
 
@@ -36,7 +36,7 @@ make test                                         # same, via konfig
 
     Sibling gists (one parent dir; no naked paths):
       ezr2/     this repo (ezr2.py library + test_ezr2.py dispatch)
-      optimiz/  optimization CSVs   (tiny.cc/optimiz)
+      optimiz/  optimization CSVs   (https://github.com/aiez/optimiz)
       konfig/   shared Makefile + dotfiles (make help|sh|vi|...)
 
 ## DESCRIPTION
@@ -99,8 +99,8 @@ make test                                         # same, via konfig
 
     ezr2.md       the tour -- a build-order textbook of the code
     dtlz.py       drive ezr2 with an external model (DTLZ1-7)
-    tiny.cc/optimiz   sibling data gist (CSVs; never bundled here)
-    tiny.cc/ezr       the original ezr (v1)
+    https://github.com/aiez/optimiz   sibling data gist (CSVs; never bundled here)
+    https://github.com/aiez/ezr       the original ezr (v1)
 
 ## LICENSE
 
