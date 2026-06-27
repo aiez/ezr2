@@ -1,5 +1,5 @@
 <!-- Copyright (c) 2026 Tim Menzies, MIT License -->
-<img src="banner.png" class="banner" alt="ezr2">
+<img src="etc/img/banner.png" class="banner" alt="ezr2">
 
 # ezr2: a tour
 

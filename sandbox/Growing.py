@@ -9,7 +9,7 @@ record the win DELTA vs the SWAY baseline (0.5, 2) on the same
 dataset+seed. The baseline grid point reads exactly 0.
 Output: Growing.png heat map + an ASCII grid on stdout.
 """
-import glob, random
+import glob, os, random
 from ezr2 import Data, csv, some, wins, landscape, the
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -81,5 +81,6 @@ for i in range(len(KEEPFS)):
     ax.text(j, i, "%.0f"%grid[i][j], ha="center", va="center",
             fontsize=8, color=c)
 fig.colorbar(im, label="mean win delta")
-fig.tight_layout(); fig.savefig("Growing.png", dpi=130)
-print("\nwrote Growing.png")
+_png = os.path.join(os.path.dirname(__file__), "Growing.png")
+fig.tight_layout(); fig.savefig(_png, dpi=130)
+print(f"\nwrote {_png}")

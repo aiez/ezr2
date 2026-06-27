@@ -27,7 +27,7 @@ $(HOLD): ## holdouts landscape-vs-random over all $(DATA), percentiles
 	@ls $(DATA)/*.csv | (gshuf 2>/dev/null || sort -R) | \
 	 xargs -P 12 -I{} python3 -B -u test_ezr2.py holdouts --file={} 2>/dev/null \
 	 | tee $@
-	@python3 -B pctl.py < $@
+	@python3 -B etc/pctl.py < $@
 
 PURE := $(HOME)/tmp/konfig/ezr2_pure.log
 $(PURE): ## pure search land-vs-random (no tree) over all $(DATA)
@@ -35,7 +35,7 @@ $(PURE): ## pure search land-vs-random (no tree) over all $(DATA)
 	@ls $(DATA)/*.csv | (gshuf 2>/dev/null || sort -R) | \
 	 xargs -P 12 -I{} python3 -B -u test_ezr2.py pure --file={} 2>/dev/null \
 	 | tee $@
-	@python3 -B pctl.py < $@
+	@python3 -B etc/pctl.py < $@
 
-grow: ## keepf/grow sensitivity study -> Growing.png + Growing.md grid
-	@python3 -B Growing.py
+grow: ## keepf/grow sensitivity study -> sandbox/Growing.png + Growing.md grid
+	@python3 -B sandbox/Growing.py
