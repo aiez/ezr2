@@ -12,6 +12,8 @@ classification tree explains which input ranges lead to the best goals.
 Runs on **data** (a CSV) or a live **model** (override `labelled()` so a
 row's goals are computed on demand — see `dtlz.py`).
 
+**Files:** [ezr2.py](http://tiny.cc/ezr2#file-ezr2-py) | [test_ezr2.py](http://tiny.cc/ezr2#file-test_ezr2-py) | [dtlz.py](http://tiny.cc/ezr2#file-dtlz-py) | [Growing.py](http://tiny.cc/ezr2#file-growing-py) | [pctl.py](http://tiny.cc/ezr2#file-pctl-py) | [ezr2.md](http://tiny.cc/ezr2#file-ezr2-md) | [Random.md](http://tiny.cc/ezr2#file-random-md) | [Growing.md](http://tiny.cc/ezr2#file-growing-md) | [Makefile](http://tiny.cc/ezr2#file-makefile) | [pyproject.toml](http://tiny.cc/ezr2#file-pyproject-toml) | [LICENSE.md](http://tiny.cc/ezr2#file-license-md)
+
 ```bash
 # sibling data gist supplies the CSVs (no data lives in here)
 git clone http://tiny.cc/optimiz                 # optimization data
@@ -22,18 +24,6 @@ python3 test_ezr2.py --file=../optimiz/auto93.csv disty
 python3 test_ezr2.py all                          # run every self-test
 make test                                         # same, via konfig
 ```
-
-### Files
-
-| file | what |
-|------|------|
-| `ezr2.py`        | the library + CLI dispatch (`main`); no tests inside |
-| `test_ezr2.py`   | every `test_*` + the runnable entry point |
-| `dtlz.py`        | tutorial: drive ezr2 with external models (DTLZ1–7) |
-| `Growing.py/.md/.png` | sensitivity study of the `keepf`/`grow` knobs |
-| `Random.md`      | is random as good as active learning? (corpus study) |
-| `pctl.py`        | percentile summary for the `holdouts`/`pure` lanes |
-| `ezr2.md`        | the tour — a build-order textbook of the code |
 
 ### Knobs (`--key=val`)
 

@@ -227,11 +227,24 @@ spend labels sparingly in y-space.
 
 ## Active learning: landscape
 
-`landscape` is a descendant of SWAY[^sway]. `project` maps rows onto an
-east-west line through two distant labelled poles (the y-better one is
-east). `landscape` then labels `grow` rows per round, keeps the
-promising fraction, and repeats until the budget (`budget-check`) is
-spent.
+`landscape` is a descendant of SWAY[^sway], and it leans on one helper,
+`project`. Given a set of already-labelled `rows`, `project` finds two
+distant poles — `east` (the y-better one) and `west` — then returns a
+function placing any row on the east-west line between them, using only
+the cheap x-distance. Low score = near the good pole.
+
+```python
+def project(rows, x, y):
+  far  = lambda r: max(rows, key=lambda z: x(z, r))
+  east = far(rows[0]); west = far(east)
+  if y(east) < y(west): east, west = west, east
+  c = x(east, west) + TINY
+  return lambda r: (x(east,r)**2 + c*c - x(west,r)**2) / (2*c)
+```
+
+`landscape` then labels `grow` rows per round, sorts the pool by
+`project`, keeps the promising fraction nearest the good pole, and
+repeats until the budget (`budget-check`) is spent.
 
 ```python
 def landscape(data):
