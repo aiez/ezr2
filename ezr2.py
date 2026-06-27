@@ -214,13 +214,14 @@ def landscape(data):
   pool = shuffle(data.rows)
   lab  = {}
   while len(lab) < cap and len(pool) >= 2*the.leaf:
-    here, k = [], 0
+    here, grown = [], 0
     for r in pool:
+      if id(r) not in lab and grown < the.grow and len(lab) < cap:
+        lab[id(r)] = r; grown += 1
       if id(r) in lab: here.append(r)
-      elif k < the.grow and len(lab) < cap:
-        lab[id(r)] = r; here.append(r); k += 1
-    n = max(1, int((1-the.keepf)*len(pool)))
-    pool = sorted(pool, key=project(here, x, y))[n:]
+    if len(lab) < cap:                       
+      n = max(1, int((1-the.keepf)*len(pool)))
+      pool = sorted(pool, key=project(here, x, y))[n:]
   return sorted(lab.values(), key=y)
 
 #-- Tree build --------------------------------------------------

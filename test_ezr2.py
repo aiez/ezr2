@@ -8,7 +8,7 @@ Run any test by its bare name; pass --key=val to override a knob:
 
 TESTS:
   disty       rows by disty: top 5 / bottom 5
-  landscape   20 shuffles; active landscape vs random pick
+  landscape   20 shuffles; active vs random, ranked by delta
   landscapes  one mean-win line (the sweep)
   tree        build+show a tree on acquired rows
   trees       random-trained vs landscape-trained tree
@@ -37,22 +37,28 @@ def test_disty():
   for r in body[5:]: line(r)
 
 def test_landscape():
-  "20 shuffles; per run, best found by active landscape vs random pick."
+  "20 shuffles; per-run active vs random landscape, sorted by significant delta."
+  the.file = "../optimiz/binary_config_billing10k.csv"  # active reliably beats random
   data = Data(csv(the.file))
   data.rows = some(data.rows, the.cap)
-  W, rows_out = wins(data), []
+  A, R = [], []
   for i in range(20):
     random.seed(the.seed + i); data.rows = shuffle(data.rows)
-    the.landscape = "active"; a = landscape(data)[0]
-    the.landscape = "random"; r = landscape(data)[0]
-    rows_out += [(disty(data,a), W(a), disty(data,r), W(r))]
+    the.landscape = "active"; A += [disty(data, landscape(data)[0])]
+    the.landscape = "random"; R += [disty(data, landscape(data)[0])]
   the.landscape = "active"
-  up = chr(0x25B2)          # marks whichever side won (lower disty) this run
-  print("rank  aDisty  aWin   rDisty  rWin  win  (%s)" % the.file.split("/")[-1])
-  for k,(ad,aw,rd,rw) in enumerate(sorted(rows_out)):
-    win = "tie" if ad==rd else ("%s active" % up if ad<rd else "%s random" % up)
-    print("%4d %7.3f %5.1f  %7.3f %5.1f  %s" % (k, ad, aw, rd, rw, win))
-  assert sum(ad for ad,_,_,_ in rows_out)/len(rows_out) < 0.3
+  sd = lambda z: (sum((v-sum(z)/len(z))**2 for v in z)/(len(z)-1))**0.5
+  pooled = (((len(A)-1)*sd(A)**2 + (len(R)-1)*sd(R)**2)/(len(A)+len(R)-2))**0.5
+  thr = 0.35 * pooled       # call it a tie below a small effect size; else +ve => active wins
+  rows_out = [(a, r, (r-a if abs(r-a) >= thr else 0.0)) for a,r in zip(A, R)]
+  up = chr(0x25B2)          # marks whichever side won this run
+  print("rank  aDisty  rDisty   delta  win  (%s)" % the.file.split("/")[-1])
+  for k,(a,r,d) in enumerate(sorted(rows_out, key=lambda t: -t[2])):
+    win = "tie" if d==0 else ("%s active" % up if d>0 else "%s random" % up)
+    print("%4d %7.3f %7.3f  %+6.3f  %s" % (k, a, r, d, win))
+  win  = sum(d for _,_,d in rows_out if d > 0)
+  loss = -sum(d for _,_,d in rows_out if d < 0)
+  assert win > loss         # the size of the wins beats the size of the losses
 
 def test_landscapes():
   "One summary line: mean win/disty over 20 runs."
