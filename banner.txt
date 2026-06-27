@@ -4,6 +4,5 @@
 |  __// /| |  / __/ 
  \___/___|_| |_____|
                     
-explainable multi-objective optimization. https://github.com/aiez/ezr2
-"find the best rows; label the fewest."
+explainable multi-objective active learning. https://github.com/aiez/ezr2
 Ex ungue leonem -- from the claw, the lion.
