@@ -1,10 +1,26 @@
 <!-- Copyright (c) 2026 Tim Menzies, MIT License -->
+<img src="banner.png" class="banner" alt="ezr2">
+
 # ezr2: a tour
+
+Tim Menzies <timm@ieee.org> · [timm.fyi](http://timm.fyi) · 2026-06-26 · [tiny.cc/ezr2](http://tiny.cc/ezr2)
 
 A textbook in genetic-stanza form. Read top-to-bottom: each
 concept appears in build order, atoms first, call sites last.
 Numbered traces (`[1]>`) are a live `python3 -i ezr2.py`
 session; outputs are verbatim.
+
+**Install.** Grab the library, its tests, and some sample data, then run:
+
+```bash
+wget -O ezr2.py      http://tiny.cc/ezr2#file-ezr2-py
+wget -O test_ezr2.py http://tiny.cc/ezr2#file-test_ezr2-py
+wget -O auto93.csv   http://tiny.cc/optimiz#file-misc_auto93-csv
+python3 test_ezr2.py --file=auto93.csv disty
+```
+
+More sample CSVs live in the sibling data gist
+[`tiny.cc/optimiz`](http://tiny.cc/optimiz) (optimization tasks).
 
 ```
 AUTHOR-CONFIG
@@ -16,11 +32,21 @@ tone:     K&R
 prose:    65 cols   code: fenced   repl: [1]>
 ```
 
-We want models that **explain themselves** — and explain themselves
-*usefully*. Useful means the explanation suggests an **intervention**:
-not just "what scored well" but "what to change to do better" (the
-second rung of Pearl's ladder of causation — though here we only ever
-propose changes already *seen* in the data, never claim proven cause).
+<hr>
+
+How can we build — *quickly and cheaply* — models that **explain
+themselves**, and explain themselves *usefully*?
+
+By *useful* we mean three things. First, an explanation should say not
+just *which* feature matters but *where*: `age < 20`, not "age". Second,
+it should show *interactions* — how `age < 20` shifts meaning inside
+another context. Third, it should suggest an **intervention**: not "what
+scored well" but "what to change to do better" (Pearl's ladder, rung
+two[^pearl] — though we only ever propose changes already *seen* in the
+data, never claim proven cause). A small tree gives all three at once:
+each branch is a *where* (`age < 20`), its nesting is the *interaction*,
+and the delta between two leaves is the *change*. The rest of this tour
+is how to grow that tree from very few labels.
 
 Two rows show the goal. `disty` is a row's distance to the ideal goals
 (0 = best); it is the *only* thing we pay to measure — everything else
@@ -35,7 +61,38 @@ is free arithmetic over the cheap x-columns.
 Light, high-Mpg cars sit near 0; heavy guzzlers near 1. The whole game:
 reach the 0.075-rows while reading `disty` for as few rows as possible
 (a few dozen labels get there), then grow a small tree that says *why*
-— and what to change.
+— and what to change. Then validate what we learned: check that tree
+against held-out data.
+
+Here is that tree (grown later from ~40 labels, depth-trimmed for this
+preview). Read it top-down:
+
+```
+ win    n      Lbs-   Acc+   Mpg+
+  -6   40   2546.85  16.47  30.00
+  11   33   2325.52  16.49  32.42   Clndrs <= 4
+  43   14   2036.43  17.45  35.71   |  Volume <= 90
+▲ 92    3   2135.00  22.30  40.00   |  |  Volume > 89
+  30   11   2009.55  16.13  34.55   |  |  Volume <= 89
+ -12   19   2538.53  15.78  30.00   |  Volume > 90
+ -92    7   3590.29  16.36  18.57   Clndrs > 4
+ -71    4   3485.50  18.00  20.00   |  Model <= 75
+▼-120   3   3730.00  14.17  16.67   |  Model > 75
+```
+
+Light 4-cylinder cars (`▲`) reach Mpg 40; heavy 8-cylinder ones (`▼`)
+bottom out at 16.7. Each branch is a *where* (`Clndrs <= 4`), the
+nesting is the *interaction* (`Volume` matters differently under each
+`Clndrs`), and the delta between the `▲` and `▼` leaves is the *action*.
+
+Now ask yourself. Your boss wants to put you in a six-cylinder car —
+the `▼` branch, poor acceleration and poor mileage. What is the *least*
+change you need to negotiate for a better car? Walk the tree: the
+nearest good leaf is `Clndrs <= 4, Volume <= 90` — the `▲` leaf, Mpg 40.
+So you ask for the ~90cc four-cylinder. All of it is inferred by showing
+your boss the tree and tracing the one branch that moves you: fast
+comprehension, fast discussion, effective decisions. The rest of the
+tour earns this picture.
 
 ## Atoms: Num and Sym
 
@@ -142,7 +199,7 @@ def disty(data, row, **kw):
 
 Labels are the cost. In the real world a label means running the
 experiment, the benchmark, the survey — slow and dear. So active
-learning *reflects on what it has seen* to choose what to label next,
+learning[^settles] *reflects on what it has seen* to choose what to label next,
 learning only from the rows that seem to matter and ignoring noisy,
 redundant ones. Done well, surprisingly few labels suffice.
 
@@ -170,10 +227,11 @@ spend labels sparingly in y-space.
 
 ## Active learning: landscape
 
-`project` maps rows onto an east-west line through two distant
-labelled poles (the y-better one is east). `landscape` then
-labels `grow` rows per round, keeps the promising fraction,
-and repeats until the budget (`budget-check`) is spent.
+`landscape` is a descendant of SWAY[^sway]. `project` maps rows onto an
+east-west line through two distant labelled poles (the y-better one is
+east). `landscape` then labels `grow` rows per round, keeps the
+promising fraction, and repeats until the budget (`budget-check`) is
+spent.
 
 ```python
 def landscape(data):
@@ -293,19 +351,27 @@ each node's `mid` is the majority class.
 
 ## The payoff: branches are actions
 
-A tree grown from a few labels is **browsable**: any row follows one
-short root-to-leaf path. Each leaf is a real cluster of rows that
-actually occurred in the data.
+Because we labelled only a few dozen rows, the tree above is **small
+enough to read** — and that is the point. Any row follows one short
+root-to-leaf path, and each leaf is a real cluster that actually
+occurred in the data.
 
-![a learned tree; red boxes mark two branch-deltas](tree.png)
+That makes the tree a *guide*, not just a report. Read the worst and
+best leaves of `[16]` straight off the page:
 
-That makes the tree a *guide*, not just a report. Find the leaf you are
-in, pick a better leaf, and the **delta between their branch tests is
-your action** (the red boxes mark two such deltas). Because both leaves
-exist in the data, the change is known to be feasible *here* — not an
-invented recommendation. This is the "intervention" promised up front:
-cheap to learn (a few labels), honest to act on (observed clusters
-only).
+```
+▼ -120   Clndrs > 4,  Model > 75            -> Mpg 16.7   (you are here)
+▲   92   Clndrs <= 4, Volume in (89,90]     -> Mpg 40.0   (you want here)
+```
+
+The **delta between those two branch tests is your action**: move to
+`<= 4` cylinders with a ~90 displacement. Because both leaves exist in
+the data, that change is known to be reachable *here* — not an invented
+recommendation. This is the "intervention" promised up front: cheap to
+learn (a few labels), honest to act on (observed clusters only).
+
+A big dataset grows a bushier tree, but the idea is unchanged — you
+still walk one short path, and a branch-delta is still the action.
 
 ## The budget rig: holdout
 
@@ -334,7 +400,7 @@ def holdout(data):
 
 The `check` knob is **at-k trust**. A real deployment shows a human a
 short list and they pick one; we grade the same way — *is a good row in
-the model's top `check`?* (hit@k / top-k accuracy, from information
+the model's top `check`?* (hit@k / top-k accuracy[^atk], from information
 retrieval). `check=1` means "trust the model, apply its top pick";
 larger `check` means "I am less sure — let me see a few." Often we are
 checking a model some *other* team built on *other* data, and `check`
@@ -369,8 +435,25 @@ $ pytest test_ezr2.py
 ```
 
 Want a live model instead of a CSV? Override `labelled` to compute
-goals on demand — `dtlz.py` drives ezr2 over the DTLZ1–7 benchmarks.
+goals on demand — `dtlz.py` drives ezr2 over the DTLZ1–7 benchmarks[^dtlz].
 
 That is the whole arc: cheap x-distance to steer, expensive
 y-distance to label, a tree to explain, a budget to keep
 everyone honest — and branch-deltas to act on.
+
+## References
+
+[^pearl]: J. Pearl, *The Seven Tools of Causal Inference, with
+  Reflections on Machine Learning*, CACM 2019. PDF:
+  <https://ftp.cs.ucla.edu/pub/stat_ser/r481.pdf>
+[^settles]: B. Settles, *Active Learning Literature Survey*, 2012. PDF:
+  <https://burrsettles.com/pub/settles.activelearning.pdf>
+[^sway]: J. Chen, V. Nair, R. Krishna, T. Menzies, *"Sampling" as a
+  Baseline Optimizer for Search-Based Software Engineering*, TSE 2018.
+  PDF: <https://arxiv.org/pdf/1608.07617>
+[^atk]: C. Manning, P. Raghavan, H. Schütze, *Introduction to
+  Information Retrieval* (precision@k / hit@k), 2008. PDF:
+  <https://nlp.stanford.edu/IR-book/pdf/irbookonlinereading.pdf>
+[^dtlz]: K. Deb, L. Thiele, M. Laumanns, E. Zitzler, *Scalable Test
+  Problems for Evolutionary Multiobjective Optimization*, 2005. PDF:
+  <https://sop.tik.ee.ethz.ch/publicationListFiles/dtlz2005a.pdf>
