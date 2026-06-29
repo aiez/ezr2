@@ -84,10 +84,8 @@ def n_(num)  : return num[0]
 def mu_(num) : return num[1]
 def m2_(num) : return num[2]
 
-def welford(v, n, mu, m2):
-  "Fold value v into a Num; return new (n,mu,m2)."
-  n += 1; d  = v - mu; mu += d / n
-  return (n, mu, m2 + d * (v - mu))
+def mid(i): return max(i,key=i.get) if isa(i,Sym) else mu_(i)
+def var(i): return entropy(i)       if isa(i,Sym) else sd(i)
 
 def sd(num): n,mu,m2 = num; return 0 if n<2 else (max(0,m2)/(n-1))**.5
 
@@ -95,6 +93,19 @@ def entropy(d):
   "Shannon entropy of a Sym (a dict of counts)."
   N = sum(d.values()) or 1
   return -sum(v/N*log2(v/N) for v in d.values() if v)
+
+def count(sym,v,inc=1):
+  "Change or delete keys."
+  if (c := sym.get(v,0) + inc) > 0: sym[v] = c
+  else: sym.pop(v, None)             
+  return sym
+
+def welford(num, v, inc=1):
+  "Fold v into a Num (inc=-1 removes); return new (n,mu,m2)."
+  n, mu, m2 = num
+  if (n := n + inc) <= 0: return Num()
+  d = v - mu; mu += inc * d / n
+  return (n, mu, m2 + inc * d * (v - mu))
 
 def mix(i, j, inc=1):
   "Merge two cols; inc=-1 subtracts j from i."
@@ -139,19 +150,16 @@ def adds(src, i=None):
   for v in src: i = add(i,v)
   return i
 
-def add(i,v):
-  "Add one value to a col, or one row to a Data."
+def add(i,v,inc=1):
+  "Add one value/row to i (inc=-1 removes)."
   if isa(i,o):
-    for at,col in i.cols.items(): i.cols[at] = add(col,v[at])
-    i.rows += [v]
-  elif v != "?":
-    if isa(i,Sym): i[v] = i.get(v,0) + 1
-    else: i = welford(v, *i)
-  return i
+    for at,col in i.cols.items(): i.cols[at] = add(col,v[at],inc)
+    (i.rows.append if inc==1 else i.rows.remove)(v)
+    return i
+  if v=="?": return i
+  return (count if isa(i,Sym) else welford)(i, v, inc=inc)
 
 #-- Dist --------------------------------------------------------
-def mid(i): return max(i,key=i.get) if isa(i,Sym) else mu_(i)
-def var(i): return entropy(i)       if isa(i,Sym) else sd(i)
 
 def norm(num, v):
   "Map v to 0..1 via a logistic on its z-score."
