@@ -31,32 +31,34 @@ TESTS: (run with their bare name):
   all      run every test above, reseting seed each
 """
 """
-INSTALL: grab the library, its tests, and some sample data, then run:
-  wget -O ezr2.py      https://github.com/aiez/ezr2#file-ezr2-py
-  wget -O test_ezr2.py https://github.com/aiez/ezr2#file-test_ezr2-py
-  wget -O auto93.csv   https://github.com/aiez/optimiz#file-misc_auto93-csv
+INSTALL: grab the library, its tests, and sample data, then run:
+  REPO=https://github.com/aiez/exr2
+  REPO=https://github.com/aiez/ezr2/blob/main
+  wget -O ezr2.py      $REPO/ezr2.py
+  wget -O test_ezr2.py $REPO/test_ezr2.py
+  wget -O auto93.csv   $REPO/auto93.csv
   python3 test_ezr2.py --file=auto93.csv disty
 
 MODES: optimize a static CSV (format below), or a live model by
-  overriding labelled() to compute goals on demand -- worked example
-  in dtlz.py (https://github.com/aiez/ezr2#file-dtlz-py).
+  overriding labelled() to compute goals live -- worked example
+  in dtlz.py ($REPO/dtlz.py).
 
 DATA: comma-separated, first row names the columns. A name's last
 character sets that column's role; its first sets its type:
   Upper case first letter  -> numeric  (else: symbolic)
-  +  /  -   suffix         -> goal: maximize / minimize  (a y-column)
+  +  /  -   suffix         -> goal: maximize / minimize  (y-col)
   !         suffix         -> klass   (a y-column)
   X         suffix         -> ignore this column
   ~         suffix         -> protected x-column
   (no suffix)              -> ordinary x-column (input)
-E.g. the auto93 header Clndrs,Volume,HpX,Model,origin,Lbs-,Acc+,Mpg+
-has numeric inputs (Clndrs/Volume/Model), a symbolic input (origin),
-an ignored column (HpX), and goals minimize Lbs, maximize Acc/Mpg.
+E.g. auto93 header Clndrs,Volume,HpX,Model,origin,Lbs-,Acc+,Mpg+
+has numeric inputs (Clndrs/Volume/Model), symbolic input origin,
+an ignored column (HpX); goals minimize Lbs, maximize Acc/Mpg.
 
-DISTY: every row's "distance to heaven" -- its distance to the ideal
-point where all goals are best (0 = ideal, 1 = worst). `disty` reads
-only the y-columns, so optimization can score a row without seeing
-how it was made. `python3 test_ezr2.py disty` sorts rows by disty and
+DISTY: each row's "distance to heaven" -- its distance to ideal
+point where goals are best (0 = ideal, 1 = worst). `disty` reads
+only the y-columns, so optimization scores a row without seeing
+how it was made. `python3 test_ezr2.py disty` sorts by disty and
 prints the best 5, a blank line, then the worst 5:
 
   Clndrs  Volume  HpX  Model  origin  Lbs-  Acc+  Mpg+  disty
@@ -72,22 +74,22 @@ import re, sys, random
 from math import log2, exp
 from bisect import bisect_left, bisect_right
 from types import SimpleNamespace as o
-isa = isinstance
 BIG = 1e32
 TINY = 1e-32
 
 #-- Cols --------------------------------------------------------
 Sym = dict
+def is_sym(i): return isinstance(i, dict)  # Sym = dict of counts
 def Num(n=0, mu=0, m2=0): return (n, mu, m2)
 
 def n_(num)  : return num[0]
 def mu_(num) : return num[1]
 def m2_(num) : return num[2]
 
-def mid(i): return max(i,key=i.get) if isa(i,Sym) else mu_(i)
-def var(i): return entropy(i)       if isa(i,Sym) else sd(i)
+def mid(i): return max(i,key=i.get) if is_sym(i) else mu_(i)
+def var(i): return entropy(i)       if is_sym(i) else sd(i)
 
-def sd(num): n,mu,m2 = num; return 0 if n<2 else (max(0,m2)/(n-1))**.5
+def sd(num): n,_,m2=num;return 0 if n<2 else(max(0,m2)/(n-1))**.5
 
 def entropy(d):
   "Shannon entropy of a Sym (a dict of counts)."
@@ -109,7 +111,7 @@ def welford(num, v, inc=1):
 
 def mix(i, j, inc=1):
   "Merge two cols; inc=-1 subtracts j from i."
-  if isa(i, Sym):
+  if is_sym(i):
     return {k: i.get(k, 0) + inc * j.get(k, 0) for k in i | j}
   (ni, mui, m2i), (nj, muj, m2j) = i, j
   n = ni + inc * nj
@@ -117,19 +119,35 @@ def mix(i, j, inc=1):
   d  = muj - mui
   mu = (ni * mui + inc * nj * muj) / n
   m2 = m2i + inc * m2j + inc * d * d * ni * nj / n
-  return Num(n, mu, max(0, m2))      # subtraction can underflow m2 below 0
+  return Num(n, mu, max(0, m2))  # subtraction can underflow m2
 
-#-- Data --------------------------------------------------------
+def pick(col, v=None):
+  "Sample one value: roulette for a Sym, Irwin-Hall for a Num."
+  if is_sym(col):                  # roulette wheel over counts
+    n = sum(col.values()) * random.random()
+    for k, c in col.items():
+      if (n := n - c) <= 0: return k
+    return k
+  mu = mu_(col) if v is None or v == "?" else v  # bell at v|mu
+  r  = random.random
+  return mu + sd(col)*2*(r()+r()+r()-1.5)
+
+#-- Data --------------------------------------------------------
 def Data(src):
   "Build a table; first row = column names."
   src  = iter(src)
   data = o(names=next(src), cols={}, x=[], y=[], goal={},
-           klass=None, protect=[], rows=[])
+           klass=None, protect=[], rows=[], mid=None)
   return adds(src, roles(data))
 
 def clone(data, rows):
   "Fresh Data over a subset of rows."
   return Data([data.names] + rows)
+
+def mids(data):
+  "Cached centroid: per-column mid, rebuilt after add/remove."
+  data.mid = data.mid or [mid(col) for col in data.cols.values()]
+  return data.mid
 
 def roles(data):
   "Tag cols x/y/klass/protect from name suffixes."
@@ -146,18 +164,19 @@ def roles(data):
 
 def adds(src, i=None):
   "Fold a stream of values/rows into i (Num by default)."
-  i = Num() if i is None else i        # keep an empty Sym; {} is falsy
+  i = Num() if i is None else i  # keep empty Sym; {} is falsy
   for v in src: i = add(i,v)
   return i
 
 def add(i,v,inc=1):
   "Add one value/row to i (inc=-1 removes)."
-  if isa(i,o):
+  if isinstance(i,o):
+    i.mid = None  # invalidate cached centroid
     for at,col in i.cols.items(): i.cols[at] = add(col,v[at],inc)
     (i.rows.append if inc==1 else i.rows.remove)(v)
     return i
   if v=="?": return i
-  return (count if isa(i,Sym) else welford)(i, v, inc=inc)
+  return (count if is_sym(i) else welford)(i, v, inc=inc)
 
 #-- Dist --------------------------------------------------------
 
@@ -176,7 +195,7 @@ def minkowski(vals, p=2):
 def gap(col, u, v):
   "Distance 0..1 between two values of one column."
   if u == v == "?": return 1
-  if isa(col, Sym): return u != v
+  if is_sym(col): return u != v
   u, v = norm(col, u), norm(col, v)
   if u == "?": u = 1 if v < .5 else 0
   if v == "?": v = 1 if u < .5 else 0
@@ -203,7 +222,99 @@ def wins(data):
   return lambda r: max(-100, min(100,
     100 * (1 - (disty(data,r)-lo) / (b4-lo+TINY))))
 
-#-- Landscape ---------------------------------------------------
+#-- Tree build --------------------------------------------------
+def size(c): return sum(c.values()) if is_sym(c) else n_(c)
+
+def score(here, there):
+  "Split cost (lower=better): size-weighted mean of var."
+  a, b = size(here), size(there)
+  return (var(here)*a + var(there)*b) / (a + b + 1e-32)
+
+def cuts(data,rows,at,Y,accum=Num):
+  "Yield (cost,at,v) cuts; sides >= the.leaf. accum=Num|Sym"
+  xy  = [(r[at], Y(r)) for r in rows if r[at] != "?"]
+  n   = len(xy)
+  tot = adds((y for _,y in xy), accum())
+  cut = lambda here,k: (score(here, mix(tot,here,-1)), at,k)
+  big = lambda lo: the.leaf <= lo <= n-the.leaf
+  if is_sym(data.cols[at]):
+    for k in {x for x,_ in xy}:
+      ys = [y for x,y in xy if x==k]
+      if big(len(ys)): yield cut(adds(ys, accum()), k)
+  else:
+    xy.sort(); me=accum()
+    for j,(x,y) in enumerate(xy):
+      me = add(me, y)
+      if j+1 < n and x != xy[j+1][0] and big(j+1):
+        yield cut(me, x)
+
+def has(row, col, at, v):
+  "Does row fall on the yes-side of a cut? (? = yes)."
+  w = row[at]
+  return w == "?" or (v == w if is_sym(col) else w <= v)
+
+def tree(data, rows, Y=None, accum=Num, lvl=0):
+  "Recursively split rows on the min-cost cut. accum=Num|Sym."
+  Y = Y or (lambda r: disty(data, r))
+  t = o(at=None, mid=mid(adds((Y(r) for r in rows), accum())),
+        n=len(rows), rows=rows)
+  if len(rows) >= 2*the.leaf and lvl < the.maxd:
+    if cut := min((c for at in data.x
+        for c in cuts(data,rows,at,Y,accum)), default=0):
+      _, at, v = cut
+      col = data.cols[at]
+      yes, no = [], []
+      for r in rows: (yes if has(r,col,at,v) else no).append(r)
+      if yes and no:
+        t.at, t.v = at, v
+        t.yes = tree(data, yes, Y, accum, lvl+1)
+        t.no  = tree(data, no,  Y, accum, lvl+1)
+  return t
+
+def leaf(data, t, row):
+  "Walk a row down to its leaf; return the leaf's mid."
+  while t.at is not None:
+    t = t.yes if has(row,data.cols[t.at],t.at,t.v) else t.no
+  return t.mid
+
+#-- Tree show ---------------------------------------------------
+def leaves(t):
+  "Yield every leaf node of a tree."
+  if t.at is None: yield t
+  else: yield from leaves(t.yes); yield from leaves(t.no)
+
+def show(data, t):
+  "Pretty-print a tree: win, n, goal means, then branches."
+  y  = lambda r: disty(data, r)
+  vs = sorted(y(r) for r in t.rows)
+  blo, bmd = vs[0], vs[len(vs)//2]
+  win= lambda rows: int(100*(1 - (
+        sum(y(r) for r in rows)/len(rows) - blo)/(bmd-blo+TINY)))
+  ws = [win(x.rows) for x in leaves(t)]
+  lo, hi = min(ws), max(ws)
+  rnd  = lambda v: round(v, the.round) if type(v)==float else v
+  cond = lambda t,b: "%s %s %s" % (data.names[t.at],
+    ("==" if b else "!=") if is_sym(data.cols[t.at])
+    else ("<=" if b else ">"), rnd(t.v))
+  best, worst = chr(0x25B2), chr(0x25BC)  # up/down triangles
+  head = " ".join("%8s" % data.names[a] for a in data.y)
+  print("%s %4s %5s  %s" % (" ", "win", "n", head))
+  def go(t, pad="", edge=""):
+    w = win(t.rows)
+    m = " "
+    if t.at is None: m=best if w==hi else worst if w==lo else " "
+    col = lambda a: mid(adds(r[a] for r in t.rows))
+    mids = " ".join("%8.*f"%(the.round, col(a)) for a in data.y)
+    print(("%s %4d %5d  %s  %s%s"
+           % (m, w, t.n, mids, pad, edge)).rstrip())
+    if t.at is not None:
+      p2 = pad + ("|  " if edge else "")
+      kids = [(t.yes, cond(t,True)), (t.no, cond(t,False))]
+      for kid,e in sorted(kids, key=lambda ke: ke[0].mid):
+        go(kid, p2, e)
+  go(t)
+
+#-- Landscape ---------------------------------------------------
 def project(rows, x, y):
   "Row -> position on the east-west line (x=dist,y=goal)."
   far  = lambda r: max(rows, key=lambda z: x(z, r))
@@ -224,105 +335,13 @@ def landscape(data):
   while len(lab) < cap and len(pool) >= 2*the.leaf:
     here, grown = [], 0
     for r in pool:
-      if id(r) not in lab and grown < the.grow and len(lab) < cap:
+      if id(r) not in lab and grown<the.grow and len(lab) < cap:
         lab[id(r)] = r; grown += 1
       if id(r) in lab: here.append(r)
     if len(lab) < cap:                       
       n = max(1, int((1-the.keepf)*len(pool)))
       pool = sorted(pool, key=project(here, x, y))[n:]
   return sorted(lab.values(), key=y)
-
-#-- Tree build --------------------------------------------------
-def size(col): return sum(col.values()) if isa(col,Sym) else n_(col)
-
-def score(here, there):
-  "Split cost (lower=better): size-weighted nean of var (sd|entropy)."
-  a, b = size(here), size(there)
-  return (var(here)*a + var(there)*b) / (a + b + 1e-32)
-
-def cuts(data,rows,at,Y,accum=Num):
-  "Yield (cost,at,v) splits with both sides >= the.leaf. accum=Num|Sym"
-  xy  = [(r[at], Y(r)) for r in rows if r[at] != "?"]
-  n   = len(xy)
-  tot = adds((y for _,y in xy), accum())
-  cut = lambda here,k: (score(here, mix(tot,here,-1)), at,k)
-  big = lambda lo: the.leaf <= lo <= n-the.leaf
-  if isa(data.cols[at], Sym):
-    for k in {x for x,_ in xy}:
-      ys = [y for x,y in xy if x==k]
-      if big(len(ys)): yield cut(adds(ys, accum()), k)
-  else:
-    xy.sort(); me=accum()
-    for j,(x,y) in enumerate(xy):
-      me = add(me, y)
-      if j+1 < n and x != xy[j+1][0] and big(j+1):
-        yield cut(me, x)
-
-def has(row, col, at, v):
-  "Does row fall on the yes-side of a cut? (? = yes)."
-  w = row[at]
-  return w == "?" or (v == w if isa(col, Sym) else w <= v)
-
-def tree(data, rows, Y=None, accum=Num, lvl=0):
-  "Recursively split rows on the min-cost cut. accum=Num|Sym."
-  Y = Y or (lambda r: disty(data, r))
-  t = o(at=None, mid=mid(adds((Y(r) for r in rows), accum())),
-        n=len(rows), rows=rows)
-  if len(rows) >= 2*the.leaf and lvl < the.maxd:
-    if cut := min((c for at in data.x
-                   for c in cuts(data,rows,at,Y,accum)), default=0):
-      _, at, v = cut
-      col = data.cols[at]
-      yes, no = [], []
-      for r in rows: (yes if has(r,col,at,v) else no).append(r)
-      if yes and no:
-        t.at, t.v = at, v
-        t.yes = tree(data, yes, Y, accum, lvl+1)
-        t.no  = tree(data, no,  Y, accum, lvl+1)
-  return t
-
-def leaf(data, t, row):
-  "Walk a row down to its leaf; return the leaf's mid."
-  while t.at is not None:
-    t = t.yes if has(row,data.cols[t.at],t.at,t.v) else t.no
-  return t.mid
-
-#-- Tree show ---------------------------------------------------
-def leaves(t):
-  "Yield every leaf node of a tree."
-  if t.at is None: yield t
-  else: yield from leaves(t.yes); yield from leaves(t.no)
-
-def show(data, t):
-  "Pretty-print a tree: win, n, goal means, then branches."
-  y  = lambda r: disty(data, r)
-  vs = sorted(y(r) for r in t.rows)
-  blo, bmd = vs[0], vs[len(vs)//2]
-  win= lambda rows: int(100*(1 - (
-        sum(y(r) for r in rows)/len(rows) - blo)/(bmd-blo+TINY)))
-  ws = [win(x.rows) for x in leaves(t)]
-  lo, hi = min(ws), max(ws)
-  rnd  = lambda v: round(v, the.round) if isa(v, float) else v
-  cond = lambda t,b: "%s %s %s" % (data.names[t.at],
-    ("==" if b else "!=") if isa(data.cols[t.at],Sym)
-    else ("<=" if b else ">"), rnd(t.v))
-  best, worst = chr(0x25B2), chr(0x25BC)        # up/down triangles
-  head = " ".join("%8s" % data.names[a] for a in data.y)
-  print("%s %4s %5s  %s" % (" ", "win", "n", head))
-  def go(t, pad="", edge=""):
-    w = win(t.rows)
-    m = " "
-    if t.at is None: m = best if w==hi else worst if w==lo else " "
-    mids = " ".join("%8.*f" % (the.round, mid(adds(r[a] for r in t.rows)))
-                    for a in data.y)
-    print(("%s %4d %5d  %s  %s%s"
-           % (m, w, t.n, mids, pad, edge)).rstrip())
-    if t.at is not None:
-      p2 = pad + ("|  " if edge else "")
-      kids = [(t.yes, cond(t,True)), (t.no, cond(t,False))]
-      for kid,e in sorted(kids, key=lambda ke: ke[0].mid):
-        go(kid, p2, e)
-  go(t)
 
 #-- misc --------------------------------------------------------
 def shuffle(lst): return random.sample(lst, len(lst))
@@ -373,7 +392,7 @@ def csv(file, clean=lambda s: s.partition("#")[0].split(",")):
       row = [x.strip() for x in clean(line)]
       if any(row): yield [thing(x) for x in row]
 
-#-- Holdout (evaluation harness) --------------------------------
+#-- Holdout (evaluation harness) --------------------------------
 def holdout(data):
   "Budget rig: landscape train -> tree -> pick best test row."
   rows  = shuffle(data.rows)
@@ -386,7 +405,7 @@ def holdout(data):
 
 #-- Main --------------------------------------------------------
 def main(funs):
-  "Apply --key=val to `the`, then run each named test_* in `funs`."
+  "Apply --key=val to `the`, then run named test_* in `funs`."
   if "-h" in sys.argv: return print(__doc__)
   for a in sys.argv[1:]:
     if a[:2]=="--" and "=" in a:
